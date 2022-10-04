@@ -10,7 +10,7 @@ Licensed under a Creative Commons "Attribution Non-Commercial Share Alike" Licen
 local _
 
 local MAJOR_VERSION = "LibFishing-1.0"
-local MINOR_VERSION = 101086
+local MINOR_VERSION = 101090
 
 if not LibStub then error(MAJOR_VERSION .. " requires LibStub") end
 
@@ -20,28 +20,61 @@ if not FishLib then
 end
 
 local WOW = {};
-function FishLib:WOWVersion()
-    return WOW.major, WOW.minor, WOW.dot, WOW.classic;
-end
-
-function FishLib:IsClassic()
-    return WOW.classic;
-end
-
 if ( GetBuildInfo ) then
-    local v, b, d = GetBuildInfo();
+    local v, b, d, i = GetBuildInfo();
     WOW.build = b;
     WOW.date = d;
     local s,e,maj,min,dot = string.find(v, "(%d+).(%d+).(%d+)");
     WOW.major = tonumber(maj);
     WOW.minor = tonumber(min);
     WOW.dot = tonumber(dot);
-    WOW.classic = (_G.WOW_PROJECT_ID ~= _G.WOW_PROJECT_MAINLINE)
+    WOW.interface = tonumber(i)
 else
     WOW.major = 1;
     WOW.minor = 9;
     WOW.dot = 0;
-    WOW.classic = true
+    WOW.interface = 10900
+end
+
+local function IsRetail()
+    return (_G.WOW_PROJECT_ID == _G.WOW_PROJECT_MAINLINE)
+end
+
+local function IsClassic()
+    return not IsRetail()
+end
+
+local function IsVanilla()
+    return (_G.WOW_PROJECT_ID == _G.WOW_PROJECT_CLASSIC)
+end
+
+local function IsCrusade()
+    return IsClassic() and WOW.interface >= 20500 and WOW.interface < 30000 
+end
+
+local function IsWrath()
+    return not IsRetail() and WOW.interface >= 30400 and WOW.interface < 40000
+end
+
+
+function FishLib:WOWVersion()
+    return WOW.major, WOW.minor, WOW.dot, IsClassic();
+end
+
+function FishLib:IsRetail()
+    return IsRetail()
+end
+
+function FishLib:IsClassic()
+    return IsClassic()
+end
+
+function FishLib:IsVanilla()
+    return IsVanilla()
+end
+
+function FishLib:IsCrusade()
+    return IsCrusade()
 end
 
 -- Some code suggested by the author of LibBabble-SubZone so I don't have
@@ -66,7 +99,15 @@ local BSZ = FishLib_GetLocaleLibBabble("LibBabble-SubZone-3.0");
 local BSL = LibStub("LibBabble-SubZone-3.0"):GetBaseLookupTable();
 local BSZR = LibStub("LibBabble-SubZone-3.0"):GetReverseLookupTable();
 local HBD = LibStub("HereBeDragons-2.0");
-local LT = LibStub("LibTouristClassic-1.0");
+
+local LT
+if IsVanilla() then
+    LT = LibStub("LibTouristClassicEra");
+elseif IsClassic() then
+    LT = LibStub("LibTouristClassic-1.0");
+else
+    LT = LibStub("LibTourist-3.0");
+end
 
 FishLib.HBD = HBD
 
@@ -75,7 +116,7 @@ if not lastVersion then
     FishLib.gearcheck = true
     FishLib.hasgear = false;
     FishLib.PLAYER_SKILL_READY = "PlayerSkillReady"
-    FishLib.havedata = WOW.classic;
+    FishLib.havedata = IsClassic();
 end
 
 FishLib.registered = FishLib.registered or CBH:New(FishLib, nil, nil, false)
@@ -85,11 +126,16 @@ local SABUTTONNAME = "LibFishingSAButton";
 FishLib.UNKNOWN = "UNKNOWN";
 
 function FishLib:GetFishingProfession()
-    local fishing, _ = self:GetFishingSpellInfo();
+    local Fishing
+    if self:IsClassic() then
+        fishing, _ = self:GetFishingSpellInfo();
+    else
+        _, _, _, fishing, _, _ = GetProfessions();
+    end
     return fishing
 end
 
--- support finding the fishing skill
+-- support finding the fishing skill in classic
 local function FindSpellID(thisone)
     local id = 1;
     local spellTexture = GetSpellTexture(id);
@@ -104,19 +150,37 @@ local function FindSpellID(thisone)
 end
 
 function FishLib:GetFishingSpellInfo()
-    local spell = FindSpellID("Interface\\Icons\\Trade_Fishing");
-    if spell then
-        local name, _, _ = GetSpellInfo(spell);
-        return spell, name;
+    if self:IsClassic() then
+        local spell = FindSpellID("Interface\\Icons\\Trade_Fishing");
+        if spell then
+            local name, _, _ = GetSpellInfo(spell);
+            return spell, name;
+        end
+        return 9, PROFESSIONS_FISHING;
     end
-    return 9, PROFESSIONS_FISHING;
+
+    local fishing = self:GetFishingProfession();
+    if not fishing then
+        return 9, PROFESSIONS_FISHING
+    end
+    local name, _, _, _, count, offset, _ = GetProfessionInfo(fishing);
+    local id = nil;
+    for i = 1, count do
+        local _, spellId = GetSpellLink(offset + i, "spell");
+        local spellName = GetSpellInfo(spellId);
+        if (spellName == name) then
+            id = spellId;
+            break;
+        end
+    end
+    return id, name
 end
 
 local DEFAULT_SKILL = { ["max"] = 300, ["skillid"] = 356, ["cat"] = 1100, ["rank"] = 0 }
 FishLib.continent_fishing = {
     { ["max"] = 300, ["skillid"] = 356, ["cat"] = 1100, ["rank"] = 0 },	-- 2592?
     { ["max"] = 300, ["skillid"] = 356, ["cat"] = 1100, ["rank"] = 0 },
-    { ["max"] = 375, ["skillid"] = 2591, ["cat"] = 1102, ["rank"] = 0 },	-- Outland Fishing
+    { ["max"] = 75, ["skillid"] = 2591, ["cat"] = 1102, ["rank"] = 0 },	-- Outland Fishing
     { ["max"] = 75, ["skillid"] = 2590, ["cat"] = 1104, ["rank"] = 0 },	-- Northrend Fishing
     { ["max"] = 75, ["skillid"] = 2589, ["cat"] = 1106, ["rank"] = 0 },	-- Cataclysm Fishing (Darkmoon Island?)
     { ["max"] = 75, ["skillid"] = 2588, ["cat"] = 1108, ["rank"] = 0 },	-- Pandaria Fishing
@@ -126,6 +190,10 @@ FishLib.continent_fishing = {
     { ["max"] = 175, ["skillid"] = 2585, ["cat"] = 1114, ["rank"] = 0 },	-- Zandalar Fishing
     { ["max"] = 200, ["skillid"] = 2754, ["cat"] = 1391, ["rank"] = 0 },	-- Shadowlands Fishing
 }
+
+if IsCrusade() then
+    FishLib.continent_fishing[2].max = 375
+end
 
 local FISHING_LEVELS = {
     300,        -- Classic

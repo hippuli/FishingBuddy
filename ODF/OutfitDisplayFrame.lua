@@ -568,7 +568,6 @@ local function SwitchOutfit(self, outfit)
 	end
 
 	local name, _, _, _, _, _, notInterruptible, spellId = UnitChannelInfo("player")
-	print(name, notInterruptible, spellId)
 	if name then
 		return OnSwapError(OUTFITDISPLAYFRAME_CASTINGMSG);
 	end
@@ -824,7 +823,12 @@ function OutfitDisplayItemButton_OnLoad(self)
 	SetItemButtonTexture(self, self.backgroundTextureName);
 	self:RegisterForDrag("LeftButton");
 	self:RegisterForClicks("LeftButtonUp", "RightButtonUp");
-self:RegisterEvent("CURSOR_CHANGED");
+
+	if FL:IsRetail() or FL:IsClassic() then
+		self:RegisterEvent("CURSOR_UPDATE");
+	else
+		self:RegisterEvent("CURSOR_CHANGED");
+	end
 	self:SetFrameLevel(self:GetFrameLevel()+3);
 end
 

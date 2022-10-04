@@ -4,13 +4,6 @@ Version 0.7.8
 Version 0.7.7
 - Fix buff check comparison error
 
-Version 0.7.6 Beta 3
-- Update to the latest LibTourist for Crusade
-
-Version 0.7.6 Beta 2
-- Let's try loading the LibTourist library just the way we do in Classic, since we didn't change the file name
-
-Version 0.7.6 Beta 1
 Version 0.7.6
 - Let's try separate versions for Classic and Crusade
 
