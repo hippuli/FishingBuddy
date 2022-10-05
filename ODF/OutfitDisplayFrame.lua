@@ -824,7 +824,7 @@ function OutfitDisplayItemButton_OnLoad(self)
 	self:RegisterForDrag("LeftButton");
 	self:RegisterForClicks("LeftButtonUp", "RightButtonUp");
 
-	if FL:IsRetail() or FL:IsClassic() then
+	if FL:IsRetail() or FL:IsVanilla() then
 		self:RegisterEvent("CURSOR_UPDATE");
 	else
 		self:RegisterEvent("CURSOR_CHANGED");
