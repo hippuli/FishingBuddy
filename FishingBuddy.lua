@@ -90,8 +90,6 @@ function FBI:Error(msg)
 	FBI:Output(FBConstants.NAME..": "..msg, 1.0, 0, 0);
 end
 
-local FL = LibStub("LibFishing-1.0");
-
 local uselocale = FBI.DebugLocale;
 
 local major,_,_ = FL:WOWVersion();
@@ -413,7 +411,7 @@ end
 
 local function AutoPoleCheck(self, ...)
     if (self.zone) then
-        distance = FL:GetDistanceTo(self.zone, self.x, self.y)
+        local distance = FL:GetDistanceTo(self.zone, self.x, self.y)
         if distance then
             if distance > 50 or (not FBI:HasRaftBuff() and distance > 20) then
                 self:EmitStopFishing()
@@ -446,7 +444,6 @@ local function AutoPoleEvent(self, event, arg1, arg2, arg3, arg4, arg5)
     elseif ( event == "PLAYER_EQUIPMENT_CHANGED" or
             event == "BAG_UPDATE" or
             event == "PLAYER_ALIVE") then
-        start_fishing = false
         if FL:IsFishingPole(FBI:GetSettingBool("PartialGear")) then
             self:EmitStartFishing()
         else
@@ -856,7 +853,7 @@ end;
 function FBI:RunHandlers(what, ...)
     local eh = event_handlers[what];
     if ( eh ) then
-        for idx,func in pairs(eh) do
+        for _,func in pairs(eh) do
             func(...);
         end
     end
@@ -896,7 +893,11 @@ function FBI:ReadyForFishing()
 end
 
 local function CheckCastingKeys()
-    return FBI:ReadyForFishing();
+    if not FL:IsClassic() then
+        return CastingKeys() or FBI:ActiveSetting("KeepOnTruckin") or FBI:ReadyForFishing();
+    else
+        return FBI:ReadyForFishing();
+    end
 end
 
 local QuestLures = {};
@@ -1031,15 +1032,14 @@ function FBI:GetUpdateLure()
         -- Is this a quest fish we should open up?
         if ( GSB("AutoOpen") ) then
             while ( table.getn(OpenThisFishId) > 0 ) do
-                local id = OpenThisFishId[1];
-                local c = GetItemCount(id);
+                local c = GetItemCount(OpenThisFishId[1]);
                 if (c < 2) then
                     table.remove(OpenThisFishId, 1);
                 end
                 if ( c > 0 ) then
                     DoAutoOpenLoot = true;
-                    local _,_,_,_,_,name,_ = self:GetFishieRaw(id);
-                    return true, id, name;
+                    local _,_,_,_,_,fname,_ = self:GetFishieRaw(id);
+                    return true, id, fname;
                 end
             end
         end
@@ -1230,6 +1230,14 @@ end
 local function GetCVarSafe(cvarname)
     return tonumber(GetCVar(cvarname))
 end
+
+local function GetCVarSafeBool(cvarname)
+    if GetCVarSafe(cvarname) then
+        return true
+    end
+    return false
+end
+
 -- do everything we think is necessary when we start fishing
 -- even if we didn't do the switch to a fishing pole
 local resetClickToMove = nil;
@@ -1361,7 +1369,7 @@ function FBI:Command(msg)
             FBI:Output(FBConstants.WINDOW_TITLE);
             if ( not FBConstants.HELPMSG ) then
                 FBConstants.HELPMSG = { "@PRE_HELP" };
-                for cmd,info in pairs(FBI.Commands) do
+                for _,info in pairs(FBI.Commands) do
                     if ( info.help ) then
                         tinsert(FBConstants.HELPMSG, info.help);
                     end
@@ -1377,7 +1385,8 @@ function FBI:Command(msg)
                 local goodargs = true;
                 if ( command.args ) then
                     for _,pat in pairs(command.args) do
-                        local w, msg = nextarg(msg, pat);
+                        local w, nmsg = nextarg(msg, pat);
+                        msg = nmsg
                         if ( not w ) then
                             goodargs = false;
                             break;
@@ -1511,17 +1520,16 @@ function FBI:OnEvent(event, ...)
                 lootcount = lootcount - 1;
             end
             if (lootcount == 0) then
-                lootcheck = false;
                 FBI:WatchUpdate();
             end
         end
         FBI:RunHandlers(FBConstants.INVENTORY_EVT)
     elseif ( event == "LOOT_READY" ) then
         local autoLoot = ...;
-        local doautoloot = false;
+        local doautoloot;
         if NewLootCheck then
             NewLootCheck = false;
-            if autoLoot or (autoLoot == nil and GetCVarSafeBool("autoLootDefault") ~= IsModifiedClick("AUTOLOOTTOGGLE"))  then
+            if autoLoot or (autoLoot == nil and GetCVarSafeBool("autoLootDefault") ~= self:IsModifiedClick("AUTOLOOTTOGGLE"))  then
                 doautoloot = true
             else
                 doautoloot = FBI:GetSettingBool("AutoLoot")
@@ -1808,6 +1816,23 @@ function FBI:EnglishList(list, conjunction)
         end
         return str;
     end
+end
+
+function FBI:QuestFishAlert(fishId, postfix)
+	if not self.FishAlertSystem then
+		local function fish_setup(frame, id, postfix)
+            local info = FishingBuddy_Info["Fishies"][id]
+            msg = info[CurLoc]
+            if postfix then
+                msg = msg.." "..postfix
+            end
+			frame.Title:SetText(FBConstants.CONFIG_DINGQUESTFISH_ONOFF)
+			frame.Name:SetText(msg)
+			frame.Icon.Texture:SetTexture(info.texture)
+		end
+		self.FishAlertSystem = AlertFrame:AddQueuedAlertFrameSubSystem("QuestFishDingTemplate", fish_setup, 2, 0)
+	end
+	self.FishAlertSystem:AddAlert(fishId, postfix)
 end
 
 function FBI:UIError(msg)

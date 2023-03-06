@@ -119,8 +119,8 @@ FishingInit.CheckRealm = function()
 			if ( old ) then
 				if ( not FishingBuddy_Info[realmName] ) then
 					FishingBuddy_Info[realmName] = { };
-					for _,tab in pairs(tabs) do
-						FishingBuddy_Info[realmName][tab] = { };
+					for _,subtab in pairs(tabs) do
+						FishingBuddy_Info[realmName][subtab] = { };
 					end
 				end
 
@@ -488,7 +488,7 @@ FishingInit.UpdateFishingDB = function()
 				return
 			end
 			TownsfolkTracker:OldCreateIcons()
-			self.icons_created = True
+			self.icons_created = true
 		end
 		TownsfolkTracker.OldDrawDungeonMinimapIcons = TownsfolkTracker.DrawDungeonMinimapIcons;
 		function TownsfolkTracker:DrawDungeonMinimapIcons(mapId)
