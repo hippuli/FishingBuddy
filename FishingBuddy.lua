@@ -444,7 +444,7 @@ local function AutoPoleEvent(self, event, arg1, arg2, arg3, arg4, arg5)
     elseif ( event == "PLAYER_EQUIPMENT_CHANGED" or
             event == "BAG_UPDATE" or
             event == "PLAYER_ALIVE") then
-        if FL:IsFishingPole(FBI:GetSettingBool("PartialGear")) then
+        if FL:IsFishingReady(FBI:GetSettingBool("PartialGear")) then
             self:EmitStartFishing()
         else
             self:EmitStopFishing()
