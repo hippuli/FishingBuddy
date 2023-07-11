@@ -299,6 +299,20 @@ local GeneralOptions = {
     },
 };
 
+
+local VolumeSlider =
+{
+    ["name"] = "FishingBuddyOption_MaxVolumeSlider",
+    ["format"] = VOLUME.." - %d%%",
+    ["min"] = 0,
+    ["max"] = 100,
+    ["step"] = 5,
+    ["scale"] = 1,
+    ["rightextra"] = 32,
+    ["setting"] = "EnhanceSound_MasterVolume"
+};
+
+
 -- x87bliss has implemented IsFishWardenEnabled as a public function, so
 -- we can retire the GUID based check
 local function IsWardenEnabled()
