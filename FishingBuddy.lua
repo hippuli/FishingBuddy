@@ -427,14 +427,14 @@ local function AutoPoleCheck(self, ...)
     if (self.zone) then
         local distance = FL:GetDistanceTo(self.zone, self.x, self.y)
         if distance then
-            if distance > 50 or (not FBI:HasRaftBuff() and distance > 20) then
+            if distance > FBI:GetSetting("Enabling_RaftDistance") or (not FBI:HasRaftBuff() and distance > FBI:GetSetting("Enabling_WalkDistance")) then
                 self:EmitStopFishing()
             end
         end
     end
     if LastCastTime then
         local elapsed = (GetTime() - LastCastTime);
-        if ( elapsed > FISHINGSPAN ) then
+        if ( elapsed > FBI:GetSetting("Enabling_IdleTimeSlider") ) then
             self:EmitStopFishing()
             return
         end
@@ -471,7 +471,6 @@ local function AutoPoleEvent(self, event, arg1, arg2, arg3, arg4, arg5)
 end
 
 FishingModeFrame:SetScript("OnEvent", AutoPoleEvent)
-FishingModeFrame:SetScript("OnUpdate", AutoPoleCheck);
 FishingModeFrame:RegisterEvent("PLAYER_LOGOUT");
 FishingModeFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED");
 FishingModeFrame:RegisterEvent("BAG_UPDATE");
